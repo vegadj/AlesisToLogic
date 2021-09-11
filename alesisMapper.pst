@@ -1,0 +1,172 @@
+/*
+		Drum Kit Designer Mapper.pst
+		
+		This PST allows you to change the notes that trigger the various Drum Kit
+		Designer voices. 
+
+		You can also set which controller changes the articulationID for the HiHat
+		Opening and if that controller should be inverted.
+		
+		For convenience, there is a flag "SHOW_INCOMING_NOTE" that you can set to 
+		true so that you can see the note that your controller pad/key triggers. 
+		This is set to false by default. 
+*/
+ResetParameterDefaults = true;			//Global Scripter variable, for reseting 
+																	//PluginParameter values to their default
+																	//value when re-running the script
+var SHOW_INCOMING_NOTE = false;     //set this to true, to print the incoming
+																	//note to the console
+
+//var INVERT_HIHAT_MOD = true;				//if HiHat controller should be inverted
+//var HIHAT_CONTROLLER = 1;						//current controller number
+var CURRENT_HIHAT_ARTICULATION = 1;	//current articulation ID for Closed Hi-Hat
+var NOTES = MIDI._noteNames;				//array of MIDI note names for menu items
+
+const DEFAULT_MAPPINGS = {
+		kick			: 36,
+		snareEdge	: 34,
+		snareCenter	: 38,
+		rimshot		: 40,
+		rimshotEdge	: 32,
+		sideStick	: 37,
+		stick		: 75,
+		clap			: 39,
+		lowTom		: 41,
+		lowMidTom	: 45,
+		highMidTom	: 47,
+		highTom		: 48,
+		hhClosedTip	: 42,
+		hhShank		: 44,
+		hhOpenEdge	: 46,
+		hhFootClose	: 33,
+		hhFootSplash	: 31,
+		rideOut		: 51,
+		rideIn		: 59,
+		rideEdge		: 52,
+		rideBell		: 53,
+		crashLeft	: 49,
+		crashRight	: 57,
+		crashLeftStop: 28,
+		crashRightStop: 29,
+		tambourine	: 54,
+		shaker		: 70,
+}
+
+const ALESIS_MAPPINGS = {
+		kick		:	36,
+		snare	:	38,
+		snareR	:	40,
+		tom1		:	48,
+		tom1R	:	50,
+		tom2		:	45,
+		tom2R	:	47,
+		tom3		:	43,
+		tom3R	:	58,
+		tom4		:	41,
+		tom4R 	:	39,
+		ride		:	51,
+		crash1	:	49,
+		crash2 	:	57,
+		hihatO	:	46,
+		hihatHO	:	23, // Half Open
+		hihatC	:	42,
+		HihatP	:	44,
+		HihatSp	:	21, //Splash Pedal
+}
+
+var CUSTOM_MAPPINGS = {};
+
+//------------------------------ HandleMIDI () ---------------------------------
+function HandleMIDI (event) {
+		if(event instanceof NoteOn) {		
+				var noteOff = new NoteOff(event);
+				//print the incoming note to the console
+				
+				if (SHOW_INCOMING_NOTE) {
+					Trace("Num :" + event.pitch + " note: " + MIDI.noteName(event.pitch) + " velocity " + event.velocity + " val: " + event.value);
+				}
+				
+				if ( event.pitch === CUSTOM_MAPPINGS["hihatHO"] ) {
+					event.pitch = DEFAULT_MAPPINGS["hhClosedTip"];
+					event.articulationID = CUSTOM_MAPPINGS["hihatHOarticulation"];
+					//noteOff.articulationID = 3;
+				}
+				
+				if ( event.pitch === 21) {
+					event.pitch = 31;
+				}
+				
+				event.send();
+				noteOff.sendAfterMilliseconds(100);
+				
+				//find the original note value, based on the incoming note value
+				//for (voice in CUSTOM_MAPPINGS) {
+				//		if (CUSTOM_MAPPINGS[voice] === event.pitch) {
+				//				event.pitch = DEFAULT_MAPPINGS[voice]; //get original note
+				//				var noteOff = new NoteOff(event);
+
+								//if HH is being triggered assign the appropriate articulationID
+				//				if ( event.pitch === CUSTOM_MAPPINGS["hihatHO"] ) {
+				//						event.pitch = CUSTOM_MAPPINGS["hhClosedTip"];
+				//						Trace(event.pitch );
+				//						event.articulationID = CUSTOM_MAPPINGS["hihatHOarticulation"];
+				//						//noteOff.articulationID = 3;
+				//				}
+//
+//								event.send();
+//								noteOff.sendAfterMilliseconds(100);
+//								break;
+//						} 
+//				}
+		}
+		else if(event instanceof NoteOff) {
+				//do nothing
+			
+		} else {
+				event.send();
+		}
+}
+
+//-------------------------- ParameterChanged () -------------------------------
+function ParameterChanged (param, value) {
+		switch(param) {
+		case 0:                  
+				CUSTOM_MAPPINGS["hihatHO"] = value;
+				break;		//set controller number for changing HiHat artID
+		case 1:                  
+				CUSTOM_MAPPINGS["hihatHOarticulation"] = value;
+				break;		//set controller number for changing HiHat artID
+		default:
+				Trace("ParameterChanged(): error: unknown parameter index.");
+		}
+}
+
+
+
+//create numbered MIDI CC names, with added "-- Off --" option
+var MIDI_CC_NAMES = ["-- Off --"];
+for (var i = 0; i < MIDI._ccNames.length; i++) {
+		MIDI_CC_NAMES.push(i + " - " + MIDI._ccNames[i]);
+}
+
+
+
+//create UI --------------------------------------------------------------------
+var PluginParameters = [
+{ 
+		name:"HihatHalfOpen",
+		type:"menu",
+		valueStrings:NOTES,
+		numberOfSteps:127,
+		defaultValue:ALESIS_MAPPINGS["hihatHO"],
+},{
+		name:"HihatHalfOpenArth",
+		type:"menu",
+		defaultValue:4,
+		minValue:1,
+		maxValue:7,
+		numberOfSteps:6, 
+		unit:"step", 
+		type:"lin"
+}
+];
