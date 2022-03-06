@@ -30,7 +30,7 @@ In your drum mixer. Press `MIDI FX` slot and choose `Scripter`
 ![Menu](asset/script_menu.png)
 
 New Scripter window will open, and paste the script over there. 
-![Window](asset/script_windows.png)
+![Window](asset/script_window.png)
 
 
 Do not forget to save script for future use. You can try it without saving.
