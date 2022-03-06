@@ -70,3 +70,10 @@ Also you can adjust this sound velocity with `choke1Velocity`
  * You can save the script as default for adding it into different drum set.
  * You can save the drum kit as preset. This is usefull, you dont have to choose script every time you change drum kit.
  * If you change some midi mapping in your drum module for some reason, you have to sync it with  `ALESIS_MAPPINGS` array in script editor to make this script work for you.
+
+## Buy me a Coffee
+
+If you want to support [buy me a coffee](https://www.buymeacoffee.com/gkhn)
+
+![coffee](asset/coffee.png)
+
