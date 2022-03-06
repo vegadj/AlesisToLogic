@@ -45,9 +45,8 @@ If you are using default alesis mapping everything should work fine.
 
 A gui window will open, for managing channels in features in the script.
 
-![Gui1](asset/gui1.png)
+![Gui1](asset/gui.png)
 
-![Gui2](asset/gui2.png)
 
 You can change and adjust values in the script gui. 
 Every time you change drum kit, `Midi FX` channel flush itself. You have to choose scripter for each drum kit after load.
@@ -58,13 +57,13 @@ Every time you change drum kit, `Midi FX` channel flush itself. You have to choo
 #### HihatHalfOpenArth
 
 Use this for adjusting half open ratio. In Logic there is total seven values. 
-one is fully closed
-seve is fully open
-Default value for script is 4.
+1 is used for fully closed hihat. 7 is used for fully open hihat. Default value for script is 4.
+If you dont want Half open sound. You can use value 1 or 7 for halfopen sound. 
 
 #### Choke
 
-Choke signal is send with same channel with crash. But we can seperate this signal and use it producing different sound also. You can choose different sound with `crash1Choke`. Also you can adjust the velocity with `choke1Velocity`  
+Choke signal is send with same channel with crash. But we can seperate this signal and use it producing different sound also. You can choose different sound with `crash1Choke`. 
+Also you can adjust this sound velocity with `choke1Velocity`  
 
 ## Tricks
  
