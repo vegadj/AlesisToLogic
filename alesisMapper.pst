@@ -1,129 +1,146 @@
 /*
 		Drum Kit Designer Mapper.pst
+		Alesis Nitro Mesh Drum Mapper
 		
-		This PST allows you to change the notes that trigger the various Drum Kit
-		Designer voices. 
-
-		You can also set which controller changes the articulationID for the HiHat
-		Opening and if that controller should be inverted.
+		This script is based on default mapper from Logic Pro. Edited specificly
+		for Alesis Nitro Mesh Kit drum module use.
+		Please report bug and request features at: 
+		https://github.com/vegadj/AlesisToLogic
 		
-		For convenience, there is a flag "SHOW_INCOMING_NOTE" that you can set to 
-		true so that you can see the note that your controller pad/key triggers. 
-		This is set to false by default. 
 */
 ResetParameterDefaults = true;			//Global Scripter variable, for reseting 
-																	//PluginParameter values to their default
-																	//value when re-running the script
-var SHOW_INCOMING_NOTE = false;     //set this to true, to print the incoming
-																	//note to the console
+										//PluginParameter values to their default
+										//value when re-running the script
+var SHOW_INCOMING_NOTE = false;    		//set this to true, to print the incoming
+										//note to the console
+																	
+var CURRENT_HIHAT_ARTICULATION = 1;		//current articulation ID for Closed Hi-Hat
+var NOTES = MIDI._noteNames;			//array of MIDI note names for menu items
 
-//var INVERT_HIHAT_MOD = true;				//if HiHat controller should be inverted
-//var HIHAT_CONTROLLER = 1;						//current controller number
-var CURRENT_HIHAT_ARTICULATION = 1;	//current articulation ID for Closed Hi-Hat
-var NOTES = MIDI._noteNames;				//array of MIDI note names for menu items
-
+// All default Notes and Sounds in Logic drum kit
 const DEFAULT_MAPPINGS = {
-		kick			: 36,
-		snareEdge	: 34,
-		snareCenter	: 38,
-		rimshot		: 40,
-		rimshotEdge	: 32,
-		sideStick	: 37,
-		stick		: 75,
-		clap			: 39,
-		lowTom		: 41,
-		lowMidTom	: 45,
-		highMidTom	: 47,
-		highTom		: 48,
-		hhClosedTip	: 42,
-		hhShank		: 44,
-		hhOpenEdge	: 46,
-		hhFootClose	: 33,
-		hhFootSplash	: 31,
-		rideOut		: 51,
-		rideIn		: 59,
-		rideEdge		: 52,
-		rideBell		: 53,
-		crashLeft	: 49,
-		crashRight	: 57,
-		crashLeftStop: 28,
-		crashRightStop: 29,
-		tambourine	: 54,
-		shaker		: 70,
+	    "28-crashLStop"		: 28,
+	    "29-crashRStop"		: 29,
+	    "30-"				: 30,
+        "31-hhFootSplash"	: 31,
+        "32-rimshotEdge"	: 32,
+        "33-hhFootClose"	: 33,
+        "34-snareEdge"		: 34,
+        "35-kick2"			: 35,
+        "36-kick"			: 36,
+        "37-sideStick"		: 37,
+        "38-snareCenter"	: 38,
+        "39-clap"			: 39,
+        "40-rimshot"		: 40,
+        "41-lowTom"			: 41,
+        "42-hhClosedTip"	: 42,
+        "43-lowTom2"		: 43,
+        "44-hhShank"		: 44,
+        "45-lowMidTom"		: 45,
+        "46-hhOpenEdge"		: 46,
+        "47-highMidTom"		: 47,
+        "48-highTom"		: 48,
+        "49-crashLeft"		: 49,
+        "50-highTom2"		: 50,
+        "51-rideOut"		: 51,
+        "52-rideEdge"		: 52,
+        "53-rideBell"		: 53,
+        "54-tambourine"		: 54,
+        "56-cowbell"		: 56,
+        "57-crashRight"		: 57,
+        "58-"				: 58,
+        "59-rideIn"			: 59,
+        "70-shaker"			: 70,
+        "75-stick "			: 75,	
 }
 
+menuDrumNotes = Object.keys(DEFAULT_MAPPINGS);
+
+
+// All default triggers in Alesis Nitro Mesh
 const ALESIS_MAPPINGS = {
-		kick		:	36,
+		kick	:	36,
 		snare	:	38,
 		snareR	:	40,
-		tom1		:	48,
+		tom1	:	48,
 		tom1R	:	50,
-		tom2		:	45,
+		tom2	:	45,
 		tom2R	:	47,
-		tom3		:	43,
+		tom3	:	43,
 		tom3R	:	58,
-		tom4		:	41,
+		tom4	:	41,
 		tom4R 	:	39,
-		ride		:	51,
+		ride	:	51,
 		crash1	:	49,
 		crash2 	:	57,
 		hihatO	:	46,
 		hihatHO	:	23, // Half Open
 		hihatC	:	42,
-		HihatP	:	44,
-		HihatSp	:	21, //Splash Pedal
+		hihatP	:	44,
+		hihatSp	:	21, //Splash Pedal
 }
 
+// creating Map array
+var playingNotesMap = new Array(128);
+for(let i=0; i<128; i++){playingNotesMap[i]=i;}
+
 var CUSTOM_MAPPINGS = {};
+
 
 //------------------------------ HandleMIDI () ---------------------------------
 function HandleMIDI (event) {
 		if(event instanceof NoteOn) {		
-				var noteOff = new NoteOff(event);
+		
 				//print the incoming note to the console
-				
 				if (SHOW_INCOMING_NOTE) {
 					Trace("Num :" + event.pitch + " note: " + MIDI.noteName(event.pitch) + " velocity " + event.velocity + " val: " + event.value);
 				}
-				
+
+
+				// alesis send separate midi note as Half-Open Hihat.
+				// This changes this note into closed hihat note, and add articulation
+				// for hihat sound.  				
 				if ( event.pitch === CUSTOM_MAPPINGS["hihatHO"] ) {
-					event.pitch = DEFAULT_MAPPINGS["hhClosedTip"];
+					event.pitch = CUSTOM_MAPPINGS["hihatC"];
 					event.articulationID = CUSTOM_MAPPINGS["hihatHOarticulation"];
-					//noteOff.articulationID = 3;
+				}
+				else {
+				// Alesis 
+					event.pitch = playingNotesMap[event.pitch];
 				}
 				
-				if ( event.pitch === 21) {
-					event.pitch = 31;
-				}
-				
+				var noteOff = new NoteOff(event);
 				event.send();
 				noteOff.sendAfterMilliseconds(100);
-				
-				//find the original note value, based on the incoming note value
-				//for (voice in CUSTOM_MAPPINGS) {
-				//		if (CUSTOM_MAPPINGS[voice] === event.pitch) {
-				//				event.pitch = DEFAULT_MAPPINGS[voice]; //get original note
-				//				var noteOff = new NoteOff(event);
-
-								//if HH is being triggered assign the appropriate articulationID
-				//				if ( event.pitch === CUSTOM_MAPPINGS["hihatHO"] ) {
-				//						event.pitch = CUSTOM_MAPPINGS["hhClosedTip"];
-				//						Trace(event.pitch );
-				//						event.articulationID = CUSTOM_MAPPINGS["hihatHOarticulation"];
-				//						//noteOff.articulationID = 3;
-				//				}
-//
-//								event.send();
-//								noteOff.sendAfterMilliseconds(100);
-//								break;
-//						} 
-//				}
-		}
 		else if(event instanceof NoteOff) {
 				//do nothing
 			
 		} else {
+				// Handling Choke
+				var newChoke = new NoteOn; 
+				if (event.value == 127) {
+					if (event.pitch == ALESIS_MAPPINGS["crash1"]) {
+						newChoke.pitch = CUSTOM_MAPPINGS["crash1Choke"];
+						newChoke.velocity=CUSTOM_MAPPINGS["choke1Velocity"];
+						newChoke.value = undefined;							
+						newChoke.send();
+						var noteOff = new NoteOff(newChoke);
+						noteOff.sendAfterMilliseconds(100);
+					
+					} else {
+					if (event.pitch == ALESIS_MAPPINGS["crash2"]) {
+						newChoke.pitch = CUSTOM_MAPPINGS["crash2Choke"];
+						newChoke.velocity=CUSTOM_MAPPINGS["choke2Velocity"];
+						newChoke.value = undefined;
+						newChoke.send();
+						var noteOff = new NoteOff(newChoke);
+						noteOff.sendAfterMilliseconds(100);						
+						}
+					}
+				}
+
 				event.send();
+
 		}
 }
 
@@ -136,6 +153,90 @@ function ParameterChanged (param, value) {
 		case 1:                  
 				CUSTOM_MAPPINGS["hihatHOarticulation"] = value;
 				break;		//set controller number for changing HiHat artID
+		case 2:                  
+				CUSTOM_MAPPINGS["kick"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["kick"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 3:                  
+				CUSTOM_MAPPINGS["snare"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["snare"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 4:                  
+				CUSTOM_MAPPINGS["snareR"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["snareR"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 5:                  
+				CUSTOM_MAPPINGS["tom1"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom1"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 6:                  
+				CUSTOM_MAPPINGS["tom1R"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom1R"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 7:                  
+				CUSTOM_MAPPINGS["tom2"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom2"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 8:                  
+				CUSTOM_MAPPINGS["tom2R"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom2R"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 9:                  
+				CUSTOM_MAPPINGS["tom3"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom3"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 10:                  
+				CUSTOM_MAPPINGS["tom3R"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom3R"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 11:                  
+				CUSTOM_MAPPINGS["tom4"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tom4"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 12:                  
+				CUSTOM_MAPPINGS["tom4R"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["tpm4R"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 13:                  
+				CUSTOM_MAPPINGS["ride"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["ride"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 14:                  
+				CUSTOM_MAPPINGS["crash1"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["crash1"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 15:                  
+				CUSTOM_MAPPINGS["crash2"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["crash2"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 16:                  
+				CUSTOM_MAPPINGS["hihatO"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["hihatO"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 17:                  
+				CUSTOM_MAPPINGS["hihatC"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];;
+				playingNotesMap[ALESIS_MAPPINGS["hihatC"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 18:                  
+				CUSTOM_MAPPINGS["hihatP"] = value;
+				playingNotesMap[ALESIS_MAPPINGS["hihatP"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 19:                  
+				CUSTOM_MAPPINGS["hihatSp"] = value;
+				playingNotesMap[ALESIS_MAPPINGS["hihatSp"]] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 20:                  
+				CUSTOM_MAPPINGS["crash1Choke"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 21:                  
+				CUSTOM_MAPPINGS["crash2Choke"] = DEFAULT_MAPPINGS[ menuDrumNotes[value] ];
+				break;
+		case 22:                  
+				CUSTOM_MAPPINGS["choke1Velocity"] = value;
+				break;									
+		case 23:                  
+				CUSTOM_MAPPINGS["choke2Velocity"] = value;
+				break;													
 		default:
 				Trace("ParameterChanged(): error: unknown parameter index.");
 		}
@@ -144,10 +245,10 @@ function ParameterChanged (param, value) {
 
 
 //create numbered MIDI CC names, with added "-- Off --" option
-var MIDI_CC_NAMES = ["-- Off --"];
-for (var i = 0; i < MIDI._ccNames.length; i++) {
-		MIDI_CC_NAMES.push(i + " - " + MIDI._ccNames[i]);
-}
+//var MIDI_CC_NAMES = ["-- Off --"];
+//for (var i = 0; i < MIDI._ccNames.length; i++) {
+//		MIDI_CC_NAMES.push(i + " - " + MIDI._ccNames[i]);
+//}
 
 
 
@@ -168,5 +269,123 @@ var PluginParameters = [
 		numberOfSteps:6, 
 		unit:"step", 
 		type:"lin"
+},{ 
+		name:"kick",
+		type:"menu",
+		valueStrings:menuDrumNotes,
+		defaultValue:36-28,
+},{
+		name : "snare",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 38-28,
+},{
+		name : "snareRim",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 40-28,
+},{
+		name : "tom1",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 48-28,
+},{
+		name : "tom1Rim",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 50-28,
+},{
+		name : "tom2",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 45-28,
+},{
+		name : "tom2Rim",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 47-28,
+},{
+		name : "tom3",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 43-28,
+},{
+		name : "tom3Rim",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 58-28,
+},{
+		name : "tom4",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 41-28,
+},{
+		name : "tom4Rim",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 39-28,
+},{
+		name : "ride",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 51-28,
+},{
+		name : "crash1",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 49-28,
+},{
+		name : "crash2",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 56-28,
+},{
+		name : "hihatOpen",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 46-28,
+},{
+		name : "hihatClose",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 42-28,
+},{
+		name : "hihatPedal",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 44-28,
+},{
+		name : "hihatSplash",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 3,
+},{
+		name : "crash1Choke",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 0,
+},{
+		name : "crash2Choke",
+		type : "menu",
+		valueStrings : menuDrumNotes,
+		defaultValue : 1,		
+},{
+		name : "choke1Velocity",
+		type : "menu",
+		numberOfSteps:127,
+		minValue:0,
+		maxValue:127,	
+		defaultValue : 5,
+		type : "lin"
+
+},{
+		name : "choke2Velocity",
+		type : "menu",
+		numberOfSteps:127,
+		minValue:0,
+		maxValue:127,	
+		defaultValue : 5,
+		type : "lin"
 }
 ];
+
