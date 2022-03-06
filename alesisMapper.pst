@@ -112,6 +112,7 @@ function HandleMIDI (event) {
 				var noteOff = new NoteOff(event);
 				event.send();
 				noteOff.sendAfterMilliseconds(100);
+		}
 		else if(event instanceof NoteOff) {
 				//do nothing
 			

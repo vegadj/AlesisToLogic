@@ -48,6 +48,7 @@ Every time you change drum kit, `Midi FX` channel flush itself. You have to choo
 
 
 ## Tricks
- You can save the script as default for adding it into different drum set.
- You can save the drum kit as preset. This is usefull, you dont have to choose script every time you change drum kit.
+ 
+ * You can save the script as default for adding it into different drum set.
+ * You can save the drum kit as preset. This is usefull, you dont have to choose script every time you change drum kit.
 
